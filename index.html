@@ -90,7 +90,9 @@
     const { useState, useEffect, createContext, useContext } = React;
     const { createRoot } = ReactDOM;
 
-    const SUPABASE_URL = 'https://qdxzbsrvzlglnxoeofzn.supabase.co'; const SUPABASE_ANON_KEY = 'sb_publishable_48WJcAJ_CpbiX8OMurh5_A_4B-1-N3I'; const SUPABASE_ADMIN_EMAIL = 'prime@arizona-prime.local';
+    const SUPABASE_URL = 'https://qdxzbsrvzlglnxoeofzn.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_48WJcAJ_CpbiX8OMurh5_A_4B-1-N3I';
+    const SUPABASE_ADMIN_EMAIL = 'prime@arizona-prime.local';
     const supabase = (SUPABASE_URL && SUPABASE_ANON_KEY) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
     const LS_APPS = 'ap_applications', LS_LEAD = 'ap_leadership';
@@ -132,7 +134,20 @@
       }, []);
       const login = async (password, userData) => {
         if (!supabase) { sessionStorage.setItem('ap_admin', '1'); setUser(userData); return; }
-        const { error } = await supabase.auth.signInWithPassword({ email: SUPABASE_ADMIN_EMAIL, password });
+        let { data, error } = await supabase.auth.signInWithPassword({ email: SUPABASE_ADMIN_EMAIL, password });
+        if (error && (error.message === 'Invalid login credentials' || error.message?.includes('Invalid'))) {
+          const signUpRes = await supabase.auth.signUp({ email: SUPABASE_ADMIN_EMAIL, password });
+          if (signUpRes.data?.session) {
+            data = signUpRes.data;
+            error = null;
+          } else if (signUpRes.data?.user && !signUpRes.data?.session) {
+            throw new Error('В Supabase выключите подтверждение email: Authentication → Providers → Email → Confirm email = OFF');
+          } else if (signUpRes.error?.message?.toLowerCase().includes('already') || signUpRes.error?.message?.toLowerCase().includes('registered')) {
+            throw new Error('Неверный пароль');
+          } else {
+            throw new Error(signUpRes.error?.message || 'Ошибка входа');
+          }
+        }
         if (error) throw new Error(error.message);
         setUser({ nickname: ADMIN_LOGIN, role: 'admin' });
       };
@@ -245,5 +260,3 @@
   </script>
 </body>
 </html>
-
-
