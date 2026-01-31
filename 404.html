@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>Redirect</title>
+  <script>var p = location.pathname.replace(/\/$/, '').split('/').pop() || ''; location.replace('./#' + (p ? '/' + p : '/'));</script>
+</head>
+<body>
+  <p>Перенаправление… <a href="./#/">На главную</a></p>
+</body>
+</html>
