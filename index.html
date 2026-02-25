@@ -1057,7 +1057,71 @@ async function dragDrop(e,idx){
   renderLeaderAdminList(); renderLeaderList();
   try{await reorderLeadersDB();showToast('Порядок сохранён');}catch(e){showToast('Ошибка сохранения порядка');}
 }
+  <script>
+/* ===============================
+   AUTO LOGIN (PERSIST AUTH)
+   =============================== */
 
+let currentAdmin = null;
+
+/* вызывается после успешного логина */
+function saveAuth(admin){
+  localStorage.setItem('adminAuth', JSON.stringify(admin));
+}
+
+/* проверка сохранённой сессии */
+function checkSavedAuth(){
+  const saved = localStorage.getItem('adminAuth');
+  if(!saved) return;
+
+  try{
+    currentAdmin = JSON.parse(saved);
+
+    // показываем панель
+    document.getElementById('adminLogin').style.display = 'none';
+    document.getElementById('adminPanel').classList.add('visible');
+
+    // имя в шапке
+    document.getElementById('adminUname').textContent = currentAdmin.login;
+    document.getElementById('adminUlevel').textContent = 'Уровень: ' + currentAdmin.level;
+  }
+  catch(e){
+    localStorage.removeItem('adminAuth');
+  }
+}
+
+/* при выходе */
+function clearAuth(){
+  localStorage.removeItem('adminAuth');
+  currentAdmin = null;
+}
+
+
+/* ===============================
+   HOOK В ТВОИ ФУНКЦИИ
+   =============================== */
+
+/* перехватываем твой логин */
+const oldLogin = window.doLogin;
+window.doLogin = function(){
+  oldLogin();
+
+  if(currentAdmin){
+    saveAuth(currentAdmin);
+  }
+}
+
+/* перехватываем выход */
+const oldLogout = window.doLogout;
+window.doLogout = function(){
+  clearAuth();
+  oldLogout();
+}
+
+/* автологин при загрузке */
+window.addEventListener('DOMContentLoaded', checkSavedAuth);
+</script>
+  
 // ═══════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════
