@@ -386,6 +386,12 @@
         <div class="login-error" id="loginError">Неверный логин или пароль</div>
         <div class="form-group"><label>Логин</label><input type="text" class="form-control" id="loginInput" placeholder="login" autocomplete="off"></div>
         <div class="form-group"><label>Пароль</label><input type="password" class="form-control" id="passInput" placeholder="••••••••"></div>
+        <div class="form-group" style="margin-top:-6px">
+  <label style="display:flex;align-items:center;gap:8px;font-size:13px;text-transform:none;letter-spacing:0;color:#888;cursor:pointer">
+    <input type="checkbox" id="rememberMe" style="width:16px;height:16px;cursor:pointer">
+    Запомнить меня
+  </label>
+</div>
         <button class="btn-primary" style="width:100%;justify-content:center;margin-top:8px" onclick="doLogin()">Войти</button>
       </div>
     </div>
@@ -1057,71 +1063,7 @@ async function dragDrop(e,idx){
   renderLeaderAdminList(); renderLeaderList();
   try{await reorderLeadersDB();showToast('Порядок сохранён');}catch(e){showToast('Ошибка сохранения порядка');}
 }
-  <script>
-/* ===============================
-   AUTO LOGIN (PERSIST AUTH)
-   =============================== */
 
-let currentAdmin = null;
-
-/* вызывается после успешного логина */
-function saveAuth(admin){
-  localStorage.setItem('adminAuth', JSON.stringify(admin));
-}
-
-/* проверка сохранённой сессии */
-function checkSavedAuth(){
-  const saved = localStorage.getItem('adminAuth');
-  if(!saved) return;
-
-  try{
-    currentAdmin = JSON.parse(saved);
-
-    // показываем панель
-    document.getElementById('adminLogin').style.display = 'none';
-    document.getElementById('adminPanel').classList.add('visible');
-
-    // имя в шапке
-    document.getElementById('adminUname').textContent = currentAdmin.login;
-    document.getElementById('adminUlevel').textContent = 'Уровень: ' + currentAdmin.level;
-  }
-  catch(e){
-    localStorage.removeItem('adminAuth');
-  }
-}
-
-/* при выходе */
-function clearAuth(){
-  localStorage.removeItem('adminAuth');
-  currentAdmin = null;
-}
-
-
-/* ===============================
-   HOOK В ТВОИ ФУНКЦИИ
-   =============================== */
-
-/* перехватываем твой логин */
-const oldLogin = window.doLogin;
-window.doLogin = function(){
-  oldLogin();
-
-  if(currentAdmin){
-    saveAuth(currentAdmin);
-  }
-}
-
-/* перехватываем выход */
-const oldLogout = window.doLogout;
-window.doLogout = function(){
-  clearAuth();
-  oldLogout();
-}
-
-/* автологин при загрузке */
-window.addEventListener('DOMContentLoaded', checkSavedAuth);
-</script>
-  
 // ═══════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════
@@ -1170,5 +1112,72 @@ loadLeaders().then(renderLeaderList);
   CREATE POLICY "all_admins" ON admins FOR ALL USING (true) WITH CHECK (true);
   CREATE POLICY "all_applications" ON applications FOR ALL USING (true) WITH CHECK (true);
 -->
+ <script>
+/* =================================
+   REMEMBER ME AUTH SYSTEM
+   ================================= */
+
+let currentAdmin = null;
+
+/* сохраняем */
+function saveAuth(admin){
+  const remember = document.getElementById('rememberMe')?.checked;
+
+  const storage = remember ? localStorage : sessionStorage;
+
+  storage.setItem('adminAuth', JSON.stringify(admin));
+}
+
+/* восстановление */
+function checkSavedAuth(){
+  const saved =
+    localStorage.getItem('adminAuth') ||
+    sessionStorage.getItem('adminAuth');
+
+  if(!saved) return;
+
+  try{
+    currentAdmin = JSON.parse(saved);
+
+    document.getElementById('adminLogin').style.display = 'none';
+    document.getElementById('adminPanel').classList.add('visible');
+
+    document.getElementById('adminUname').textContent = currentAdmin.login;
+    document.getElementById('adminUlevel').textContent = 'Уровень: ' + currentAdmin.level;
+  }
+  catch(e){
+    clearAuth();
+  }
+}
+
+/* очистка */
+function clearAuth(){
+  localStorage.removeItem('adminAuth');
+  sessionStorage.removeItem('adminAuth');
+  currentAdmin = null;
+}
+
+
+/* =================================
+   ПОДКЛЮЧАЕМСЯ К ТВОИМ ФУНКЦИЯМ
+   ================================= */
+
+const oldLogin = window.doLogin;
+window.doLogin = function(){
+  oldLogin();
+
+  if(currentAdmin){
+    saveAuth(currentAdmin);
+  }
+}
+
+const oldLogout = window.doLogout;
+window.doLogout = function(){
+  clearAuth();
+  oldLogout();
+}
+
+window.addEventListener('DOMContentLoaded', checkSavedAuth);
+</script>
 </body>
 </html>
