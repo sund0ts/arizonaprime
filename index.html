@@ -145,6 +145,13 @@
   .login-card h3 { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; margin-bottom: 6px; }
   .login-card .sub { color: #555; font-size: 13px; margin-bottom: 32px; }
   .login-error { background: rgba(232,54,93,0.1); border: 1px solid rgba(232,54,93,0.2); border-radius: 10px; padding: 12px 16px; font-size: 13px; color: var(--accent1); margin-bottom: 16px; display: none; }
+  .remember-row { display: flex; align-items: center; margin-top: 16px; }
+  .remember-label { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
+  .remember-check { width: 20px; height: 20px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; }
+  .remember-check.active { background: var(--accent1); border-color: var(--accent1); }
+  .remember-label > span { font-size: 13px; color: #666; transition: color 0.2s; }
+  .remember-label:hover > span { color: #999; }
+  .remember-label:hover .remember-check { border-color: #333; }
   .admin-panel { display: none; }
   .admin-panel.visible { display: block; animation: fadeIn 0.3s ease; }
   .admin-topbar { display: flex; align-items: center; justify-content: space-between; padding: 16px 40px; border-bottom: 1px solid var(--border); background: var(--surface); }
@@ -279,13 +286,13 @@
   <div class="hero">
     <div class="hero-glow"></div>
     <div class="hero-badge" id="heroBadge">Arizona Games Universe</div>
-    <h1><span>Добро пожаловать в</span>Arizona Prime</h1>
-    <p class="hero-desc">Элитное подразделение Arizona Games. Мы организуем масштабные ролевые события, которые задают стандарты в мире GTA RP. Каждое мероприятие — это история, которую мы пишем вместе.</p>
+    <h1><span id="heroSubtitle">Добро пожаловать в</span><span id="heroTitle" style="display:block;background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Arizona Prime</span></h1>
+    <p class="hero-desc" id="heroDesc">Элитное подразделение Arizona Games. Мы организуем масштабные ролевые события, которые задают стандарты в мире GTA RP. Каждое мероприятие — это история, которую мы пишем вместе.</p>
     <div class="hero-cards">
       <div class="hero-card">
         <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#4a9eff" stroke-width="1.8"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
-        <h3>Глобальные ивенты</h3>
-        <p>Масштабные ролевые мероприятия с сотнями участников. Сценарии, которые запоминаются.</p>
+        <h3 id="card1Title">Глобальные ивенты</h3>
+        <p id="card1Desc">Масштабные ролевые мероприятия с сотнями участников. Сценарии, которые запоминаются.</p>
       </div>
       <div class="hero-card">
         <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#c77dff" stroke-width="1.8"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10v4M18 10v4M12 10v4" stroke-linecap="round"/></svg></div>
@@ -385,7 +392,15 @@
         <div class="login-error" id="loginError">Неверный логин или пароль</div>
         <div class="form-group"><label>Логин</label><input type="text" class="form-control" id="loginInput" placeholder="login" autocomplete="off"></div>
         <div class="form-group"><label>Пароль</label><input type="password" class="form-control" id="passInput" placeholder="••••••••"></div>
-        <button class="btn-primary" style="width:100%;justify-content:center;margin-top:8px" onclick="doLogin()">Войти</button>
+        <div class="remember-row">
+          <label class="remember-label" onclick="toggleRemember()">
+            <div class="remember-check" id="rememberCheck">
+              <svg id="rememberIcon" viewBox="0 0 12 10" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;width:12px;height:10px"><polyline points="1 5 4.5 8.5 11 1"/></svg>
+            </div>
+            <span>Запомнить меня <span style="color:#333;font-size:11px">· 30 дней</span></span>
+          </label>
+        </div>
+        <button class="btn-primary" style="width:100%;justify-content:center;margin-top:16px" onclick="doLogin()">Войти</button>
       </div>
     </div>
 
@@ -401,7 +416,7 @@
         <button class="active" onclick="switchAdminTab('admins')" data-atab="admins">Администраторы</button>
         <button onclick="switchAdminTab('leaders')" data-atab="leaders">Руководство</button>
         <button onclick="switchAdminTab('applications')" data-atab="applications">Заявки</button>
-        <button onclick="switchAdminTab('devpanel')" data-atab="devpanel" style="color:#ffd700">Настройки сайта</button>
+        <button onclick="switchAdminTab('devpanel')" data-atab="devpanel" data-dev-only="1" style="color:#ffd700">Настройки сайта</button>
       </div>
       <div class="admin-content">
 
@@ -802,29 +817,106 @@ async function submitApply() {
 }
 
 // ═══════════════════════════════════════
+// REMEMBER ME
+// ═══════════════════════════════════════
+let rememberMe = false;
+const SESSION_KEY = 'ap_session';
+const DAYS_30 = 30 * 24 * 60 * 60 * 1000;
+
+function toggleRemember() {
+  rememberMe = !rememberMe;
+  const chk = document.getElementById('rememberCheck');
+  const ico = document.getElementById('rememberIcon');
+  chk.classList.toggle('active', rememberMe);
+  ico.style.display = rememberMe ? 'block' : 'none';
+}
+
+async function getCurrentIP() {
+  try {
+    const r = await fetch('https://api.ipify.org?format=json');
+    const d = await r.json();
+    return d.ip || 'unknown';
+  } catch(e) { return 'unknown'; }
+}
+
+async function saveSession(admin) {
+  const ip = await getCurrentIP();
+  const session = {
+    admin: { id: admin.id, login: admin.login, rank: admin.rank, locked: admin.locked || false },
+    ip,
+    expires: Date.now() + DAYS_30
+  };
+  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+}
+
+function clearSession() {
+  localStorage.removeItem(SESSION_KEY);
+}
+
+async function checkSavedSession() {
+  const raw = localStorage.getItem(SESSION_KEY);
+  if (!raw) return false;
+  try {
+    const session = JSON.parse(raw);
+    // Check expiry
+    if (Date.now() > session.expires) { clearSession(); return false; }
+    // Check IP
+    const currentIP = await getCurrentIP();
+    if (session.ip !== 'unknown' && currentIP !== 'unknown' && session.ip !== currentIP) {
+      clearSession();
+      showToast('Сессия сброшена: смена IP');
+      return false;
+    }
+    // Restore session
+    currentAdmin = session.admin;
+    await afterLogin();
+    return true;
+  } catch(e) { clearSession(); return false; }
+}
+
+// ═══════════════════════════════════════
 // AUTH
 // ═══════════════════════════════════════
 async function doLogin() {
-  const login=document.getElementById('loginInput').value.trim();
-  const pass=document.getElementById('passInput').value;
-  if (login==='falcone' && pass==='falcone20110403') { currentAdmin={id:'__root__',login:'falcone',rank:6,locked:true}; return afterLogin(); }
-  try {
-    const rows=await sb('admins?login=eq.'+encodeURIComponent(login)+'&pass=eq.'+encodeURIComponent(pass));
-    if (rows.length) { currentAdmin=rows[0]; afterLogin(); }
-    else document.getElementById('loginError').style.display='block';
-  } catch(e) { document.getElementById('loginError').style.display='block'; }
+  const login = document.getElementById('loginInput').value.trim();
+  const pass  = document.getElementById('passInput').value;
+
+  let adminData = null;
+
+  if (login === 'falcone' && pass === 'falcone20110403') {
+    adminData = { id: '__root__', login: 'falcone', rank: 6, locked: true };
+  } else {
+    try {
+      const rows = await sb('admins?login=eq.'+encodeURIComponent(login)+'&pass=eq.'+encodeURIComponent(pass));
+      if (rows.length) adminData = rows[0];
+    } catch(e) { /* fall through */ }
+  }
+
+  if (!adminData) {
+    document.getElementById('loginError').style.display = 'block';
+    return;
+  }
+
+  currentAdmin = adminData;
+
+  if (rememberMe) {
+    await saveSession(adminData);
+  }
+
+  afterLogin();
 }
 
 async function afterLogin() {
-  document.getElementById('loginError').style.display='none';
-  document.getElementById('adminLogin').style.display='none';
+  document.getElementById('loginError').style.display = 'none';
+  document.getElementById('adminLogin').style.display = 'none';
   document.getElementById('adminPanel').classList.add('visible');
-  document.getElementById('adminUname').textContent=currentAdmin.login;
-  document.getElementById('adminUlevel').textContent=RANK_NAMES[currentAdmin.rank];
+  document.getElementById('adminUname').textContent = currentAdmin.login;
+  document.getElementById('adminUlevel').textContent = RANK_NAMES[currentAdmin.rank];
   // Show dev panel tab only for rank 6
-  document.querySelectorAll('[data-dev-only]').forEach(el=>{ el.style.display = currentAdmin.rank===6 ? '' : 'none'; });
+  document.querySelectorAll('[data-dev-only]').forEach(el => { el.style.display = currentAdmin.rank === 6 ? '' : 'none'; });
   // Show developer rank option in add admin only for rank 6
-  const devOpt=document.getElementById('devRankOption'); if(devOpt) devOpt.style.display=currentAdmin.rank===6?'':'none';
+  const devOpt = document.getElementById('devRankOption');
+  if (devOpt) devOpt.style.display = currentAdmin.rank === 6 ? '' : 'none';
   await loadAdmins(); renderAdminTable();
   await loadLeaders(); renderLeaderAdminList();
   loadApplications();
@@ -832,12 +924,22 @@ async function afterLogin() {
 }
 
 function doLogout() {
-  currentAdmin=null;
-  document.getElementById('adminLogin').style.display='flex';
+  currentAdmin = null;
+  clearSession();
+  rememberMe = false;
+  // reset checkbox
+  const chk = document.getElementById('rememberCheck');
+  const ico = document.getElementById('rememberIcon');
+  if (chk) chk.classList.remove('active');
+  if (ico) ico.style.display = 'none';
+  document.getElementById('adminLogin').style.display = 'flex';
   document.getElementById('adminPanel').classList.remove('visible');
-  document.getElementById('loginInput').value=''; document.getElementById('passInput').value='';
+  document.getElementById('loginInput').value = '';
+  document.getElementById('passInput').value = '';
+  showToast('Вы вышли из системы');
 }
-document.getElementById('passInput').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+
+document.getElementById('passInput').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 
 // ═══════════════════════════════════════
 // ADMIN TABS
@@ -1060,7 +1162,12 @@ async function dragDrop(e,idx){
 // ═══════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════
-loadLeaders().then(renderLeaderList);
+(async () => {
+  await loadLeaders();
+  renderLeaderList();
+  // Auto-restore saved session
+  await checkSavedSession();
+})();
 </script>
 
 <!--
